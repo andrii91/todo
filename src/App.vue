@@ -26,10 +26,13 @@ function handleAdd(): void {
 }
 
 async function handleShare(): Promise<void> {
-  const success = await share();
-  shareMessage.value = success
-    ? "Посилання скопійовано!"
-    : "Не вдалось скопіювати";
+  const result = await share();
+  shareMessage.value =
+    result === "ok"
+      ? "Посилання скопійовано!"
+      : result === "too_long"
+        ? "Забагато завдань для посилання"
+        : "Не вдалось скопіювати";
   setTimeout(() => (shareMessage.value = ""), 2500);
 }
 
