@@ -8,12 +8,28 @@ function generateId(): string {
 }
 
 function encodeTodos(todos: TodoItem[]): string {
-  return btoa(encodeURIComponent(JSON.stringify(todos)));
+  const compact = todos.map((t) => [t.text, t.completed ? 1 : 0]);
+  const bytes = new TextEncoder().encode(JSON.stringify(compact));
+  const binary = String.fromCharCode(...bytes);
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 function decodeTodos(encoded: string): TodoItem[] | null {
   try {
-    return JSON.parse(decodeURIComponent(atob(encoded)));
+    const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const binary = atob(base64);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    const json = new TextDecoder().decode(bytes);
+    const compact: [string, number][] = JSON.parse(json);
+    if (!Array.isArray(compact)) return null;
+    return compact.map(([text, done]) => ({
+      id: generateId(),
+      text,
+      completed: done === 1,
+    }));
   } catch {
     return null;
   }
