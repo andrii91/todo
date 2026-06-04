@@ -1,11 +1,17 @@
 import { onUnmounted, ref, watch } from "vue";
-import type { TodoItem } from "../types/todo";
+import type { TodoItem } from "@/types/todo";
+import { t } from "@/i18n";
 
 const STORAGE_KEY = "todo-list-v1";
 const MAX_URL_LENGTH = 2000;
 const SAVE_DEBOUNCE_MS = 300;
 
-export type ShareResult = "shared" | "copied" | "too_long" | "error";
+export type ShareResult =
+  | "shared"
+  | "copied"
+  | "too_long"
+  | "error"
+  | "canceled";
 export type ImportMode = "replace" | "merge";
 
 const generateId = (): string =>
@@ -21,16 +27,16 @@ const isTodoItem = (value: unknown): value is TodoItem =>
 const compress = async (input: Uint8Array): Promise<Uint8Array> => {
   const cs = new CompressionStream("deflate-raw");
   const writer = cs.writable.getWriter();
-  writer.write(input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength) as ArrayBuffer);
-  writer.close();
+  void writer.write(input as BufferSource);
+  void writer.close();
   return new Uint8Array(await new Response(cs.readable).arrayBuffer());
 };
 
 const decompress = async (input: Uint8Array): Promise<Uint8Array> => {
   const ds = new DecompressionStream("deflate-raw");
   const writer = ds.writable.getWriter();
-  writer.write(input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength) as ArrayBuffer);
-  writer.close();
+  void writer.write(input as BufferSource);
+  void writer.close();
   return new Uint8Array(await new Response(ds.readable).arrayBuffer());
 };
 
@@ -88,13 +94,13 @@ const saveToStorage = (todos: TodoItem[]): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
   } catch {
-    // localStorage недоступний (Safari Private) або перевищено квоту — ігноруємо
+    // localStorage unavailable (Safari Private) or quota exceeded — ignore
   }
 };
 
 export const useTodos = () => {
   const todos = ref<TodoItem[]>([]);
-  /** Список, отриманий із посилання, що очікує рішення користувача (замінити/додати). */
+  /** List received from a link, awaiting the user's decision (replace/merge). */
   const pendingImport = ref<TodoItem[] | null>(null);
 
   const init = async (): Promise<void> => {
@@ -107,8 +113,8 @@ export const useTodos = () => {
       window.history.replaceState({}, "", window.location.pathname);
 
       if (decoded && decoded.length > 0) {
-        // Якщо локальний список порожній — імпортуємо одразу,
-        // інакше питаємо користувача, щоб не затерти його дані.
+        // If the local list is empty — import right away,
+        // otherwise ask the user so we don't overwrite their data.
         if (stored.length === 0) {
           todos.value = decoded;
           return;
@@ -138,7 +144,7 @@ export const useTodos = () => {
     pendingImport.value = null;
   };
 
-  // Дебаунсимо запис, щоб не смикати localStorage на кожне натискання клавіші.
+  // Debounce writes so we don't hit localStorage on every keystroke.
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   watch(
     todos,
@@ -150,7 +156,7 @@ export const useTodos = () => {
     { deep: true },
   );
 
-  // Синхронізація між вкладками: реагуємо на зміни в інших вкладках.
+  // Cross-tab sync: react to changes made in other tabs.
   const onStorage = (e: StorageEvent): void => {
     if (e.key === STORAGE_KEY) {
       todos.value = loadFromStorage();
@@ -210,10 +216,10 @@ export const useTodos = () => {
         return true;
       }
     } catch {
-      // падаємо у legacy-фолбек нижче
+      // fall through to the legacy fallback below
     }
 
-    // Фолбек для небезпечного контексту (http) або старих браузерів.
+    // Fallback for an insecure context (http) or older browsers.
     try {
       const textarea = document.createElement("textarea");
       textarea.value = text;
@@ -237,17 +243,17 @@ export const useTodos = () => {
       return "too_long";
     }
 
-    // На мобільних — нативний шер; на десктопі зазвичай немає navigator.share.
+    // On mobile — native share; desktop usually has no navigator.share.
     if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: "Мій список завдань", url: urlString });
+        await navigator.share({ title: t("share.title"), url: urlString });
         return "shared";
       } catch (e) {
-        // Користувач скасував системний діалог — не вважаємо це помилкою копіювання.
+        // User canceled the system dialog — don't treat it as an error.
         if (e instanceof DOMException && e.name === "AbortError") {
-          return "error";
+          return "canceled";
         }
-        // Інакше пробуємо буфер обміну як запасний варіант.
+        // Otherwise try the clipboard as a fallback.
       }
     }
 

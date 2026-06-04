@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, nextTick } from "vue";
-import type { TodoItem } from "../types/todo";
+import { useI18n } from "vue-i18n";
+import type { TodoItem } from "@/types/todo";
 
 type TodoItemProps = {
   todo: TodoItem;
@@ -9,6 +10,8 @@ type TodoItemProps = {
 defineOptions({
   name: "TodoItem",
 });
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
   toggle: [id: string];
@@ -42,30 +45,42 @@ const cancelEdit = (): void => {
 </script>
 
 <template>
-  <li class="todo-item" :class="{ 'todo-item--completed': todo.completed }">
+  <li
+    class="todo-item"
+    :class="{ 'todo-item--completed': todo.completed }"
+    data-testid="todo-item"
+  >
     <div v-if="!isEditing" class="todo-item__view">
       <label class="todo-item__checkbox">
         <input
           type="checkbox"
           :checked="todo.completed"
+          data-testid="todo-toggle"
           @change="emit('toggle', todo.id)"
         />
         <span class="todo-item__checkmark" />
       </label>
 
-      <span class="todo-item__text" @dblclick="startEdit">{{ todo.text }}</span>
+      <span
+        class="todo-item__text"
+        data-testid="todo-text"
+        @dblclick="startEdit"
+        >{{ todo.text }}</span
+      >
 
       <div class="todo-item__actions">
         <button
           class="todo-item__btn todo-item__btn--edit"
-          title="Редагувати"
+          :title="t('todoItem.edit')"
+          data-testid="todo-edit"
           @click="startEdit"
         >
           ✎
         </button>
         <button
           class="todo-item__btn todo-item__btn--delete"
-          title="Видалити"
+          :title="t('todoItem.delete')"
+          data-testid="todo-delete"
           @click="emit('remove', todo.id)"
         >
           ✕
@@ -78,6 +93,7 @@ const cancelEdit = (): void => {
         ref="editInput"
         v-model="editText"
         class="todo-item__edit-input"
+        data-testid="todo-edit-input"
         @keyup.enter="saveEdit"
         @keyup.escape="cancelEdit"
         @blur="saveEdit"

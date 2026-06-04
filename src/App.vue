@@ -1,106 +1,42 @@
-<script setup lang="ts">
-import { ref, computed } from "vue";
-import TodoItem from "./components/TodoItem.vue";
-import { useTodos, type ShareResult } from "./composables/useTodos";
-
-defineOptions({
-  name: "App",
-});
-
-const {
-  todos,
-  pendingImport,
-  addTodo,
-  removeTodo,
-  toggleTodo,
-  updateTodo,
-  clearAll,
-  share,
-  applyImport,
-  dismissImport,
-} = useTodos();
-
-const SHARE_MESSAGES: Record<ShareResult, string> = {
-  shared: "Поділилися!",
-  copied: "Посилання скопійовано!",
-  too_long: "Забагато завдань для посилання",
-  error: "Не вдалось поділитися",
-};
-
-const newTodoText = ref("");
-const shareMessage = ref("");
-const showConfirmClear = ref(false);
-
-const completedCount = computed(
-  () => todos.value.filter((t) => t.completed).length,
-);
-
-const totalCount = computed(() => todos.value.length);
-
-const handleAdd = (): void => {
-  addTodo(newTodoText.value);
-  newTodoText.value = "";
-};
-
-const handleShare = async (): Promise<void> => {
-  const result = await share();
-  shareMessage.value = SHARE_MESSAGES[result];
-  setTimeout(() => (shareMessage.value = ""), 2500);
-};
-
-const confirmClear = (): void => {
-  showConfirmClear.value = true;
-};
-
-const handleClearAll = (): void => {
-  clearAll();
-  showConfirmClear.value = false;
-};
-</script>
-
 <template>
   <div class="app">
     <header class="app__header">
+      <LangSwitch class="app__lang" />
       <h1 class="app__title">Todo</h1>
-      <p class="app__subtitle">Організуй свій день</p>
+      <p class="app__subtitle">{{ t("app.subtitle") }}</p>
     </header>
 
     <main class="app__main">
-      <form class="add-form" @submit.prevent="handleAdd">
-        <input
-          v-model="newTodoText"
-          class="add-form__input"
-          type="text"
-          placeholder="Що потрібно зробити?"
-          autofocus
-        />
-        <button
-          class="btn btn--add"
-          type="submit"
-          :disabled="!newTodoText.trim()"
-        >
-          Додати
-        </button>
-      </form>
+      <AddTodoForm @add="addTodo" />
 
       <div v-if="totalCount > 0" class="toolbar">
-        <span class="toolbar__counter">
-          {{ completedCount }} / {{ totalCount }} виконано
+        <span class="toolbar__counter" data-testid="counter">
+          {{ t("toolbar.counter", { completed: completedCount, total: totalCount }) }}
         </span>
 
         <div class="toolbar__actions">
-          <button class="btn btn--share" @click="handleShare">
-            <span class="btn__icon">↗</span>
-            Поділитись
-          </button>
-          <button class="btn btn--clear" @click="confirmClear">
-            Очистити все
-          </button>
+          <AppButton
+            variant="share"
+            icon="↗"
+            data-testid="share-btn"
+            @click="handleShare"
+          >
+            {{ t("toolbar.share") }}
+          </AppButton>
+          <AppButton variant="clear" data-testid="clear-btn" @click="confirmClear">
+            {{ t("toolbar.clearAll") }}
+          </AppButton>
         </div>
       </div>
 
       <Transition name="toast">
-        <div v-if="shareMessage" class="toast" role="status" aria-live="polite">
+        <div
+          v-if="shareMessage"
+          class="toast"
+          role="status"
+          aria-live="polite"
+          data-testid="toast"
+        >
           {{ shareMessage }}
         </div>
       </Transition>
@@ -116,27 +52,36 @@ const handleClearAll = (): void => {
         />
       </TransitionGroup>
 
-      <div v-if="totalCount === 0" class="empty-state">
+      <div v-if="totalCount === 0" class="empty-state" data-testid="empty-state">
         <div class="empty-state__icon">📝</div>
-        <p class="empty-state__text">Список порожній</p>
-        <p class="empty-state__hint">Додай перше завдання вище</p>
+        <p class="empty-state__text">{{ t("empty.text") }}</p>
+        <p class="empty-state__hint">{{ t("empty.hint") }}</p>
       </div>
 
       <Transition name="fade">
         <div
           v-if="showConfirmClear"
           class="modal-overlay"
+          data-testid="confirm-clear-modal"
           @click.self="showConfirmClear = false"
         >
           <div class="modal" role="dialog" aria-modal="true">
-            <p class="modal__text">Видалити всі завдання?</p>
+            <p class="modal__text">{{ t("confirmClear.text") }}</p>
             <div class="modal__actions">
-              <button class="btn btn--cancel" @click="showConfirmClear = false">
-                Скасувати
-              </button>
-              <button class="btn btn--danger" @click="handleClearAll">
-                Видалити
-              </button>
+              <AppButton
+                variant="cancel"
+                data-testid="confirm-clear-cancel"
+                @click="showConfirmClear = false"
+              >
+                {{ t("common.cancel") }}
+              </AppButton>
+              <AppButton
+                variant="danger"
+                data-testid="confirm-clear-confirm"
+                @click="handleClearAll"
+              >
+                {{ t("common.delete") }}
+              </AppButton>
             </div>
           </div>
         </div>
@@ -146,23 +91,35 @@ const handleClearAll = (): void => {
         <div
           v-if="pendingImport"
           class="modal-overlay"
+          data-testid="import-modal"
           @click.self="dismissImport"
         >
           <div class="modal" role="dialog" aria-modal="true">
             <p class="modal__text">
-              Отримано список ({{ pendingImport.length }}). Замінити свій чи
-              додати завдання?
+              {{ t("importPrompt.text", { count: pendingImport.length }) }}
             </p>
             <div class="modal__actions">
-              <button class="btn btn--cancel" @click="dismissImport">
-                Скасувати
-              </button>
-              <button class="btn btn--add" @click="applyImport('merge')">
-                Додати
-              </button>
-              <button class="btn btn--danger" @click="applyImport('replace')">
-                Замінити
-              </button>
+              <AppButton
+                variant="cancel"
+                data-testid="import-cancel"
+                @click="dismissImport"
+              >
+                {{ t("common.cancel") }}
+              </AppButton>
+              <AppButton
+                variant="primary"
+                data-testid="import-merge"
+                @click="applyImport('merge')"
+              >
+                {{ t("importPrompt.merge") }}
+              </AppButton>
+              <AppButton
+                variant="danger"
+                data-testid="import-replace"
+                @click="applyImport('replace')"
+              >
+                {{ t("importPrompt.replace") }}
+              </AppButton>
             </div>
           </div>
         </div>
@@ -170,6 +127,66 @@ const handleClearAll = (): void => {
     </main>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
+import TodoItem from "@/components/TodoItem.vue";
+import LangSwitch from "@/components/LangSwitch.vue";
+import AddTodoForm from "@/components/AddTodoForm.vue";
+import AppButton from "@/components/AppButton.vue";
+import { useTodos } from "@/composables/useTodos";
+
+defineOptions({
+  name: "App",
+});
+
+const { t } = useI18n();
+
+// Keep the document title in sync with the active locale.
+watchEffect(() => {
+  document.title = t("app.title");
+});
+
+const {
+  todos,
+  pendingImport,
+  addTodo,
+  removeTodo,
+  toggleTodo,
+  updateTodo,
+  clearAll,
+  share,
+  applyImport,
+  dismissImport,
+} = useTodos();
+
+const shareMessage = ref("");
+const showConfirmClear = ref(false);
+
+const completedCount = computed(
+  () => todos.value.filter((t) => t.completed).length,
+);
+
+const totalCount = computed(() => todos.value.length);
+
+const handleShare = async (): Promise<void> => {
+  const result = await share();
+  // User dismissed the native share sheet — stay silent.
+  if (result === "canceled") return;
+  shareMessage.value = t(`share.${result}`);
+  setTimeout(() => (shareMessage.value = ""), 2500);
+};
+
+const confirmClear = (): void => {
+  showConfirmClear.value = true;
+};
+
+const handleClearAll = (): void => {
+  clearAll();
+  showConfirmClear.value = false;
+};
+</script>
 
 <style scoped lang="scss">
 .app {
@@ -181,6 +198,7 @@ const handleClearAll = (): void => {
   padding: 40px 16px 80px;
 
   &__header {
+    position: relative;
     text-align: center;
     margin-bottom: 32px;
   }
@@ -203,113 +221,9 @@ const handleClearAll = (): void => {
     width: 100%;
     max-width: 560px;
   }
-}
 
-.add-form {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-
-  &__input {
-    flex: 1;
-    padding: 14px 18px;
-    border: 2px solid var(--color-border);
-    border-radius: 14px;
-    font-size: 15px;
-    background: var(--color-surface);
-    color: var(--color-text);
-    outline: none;
-    transition: border-color 0.2s ease;
-    font-family: inherit;
-
-    &:focus {
-      border-color: var(--color-primary);
-    }
-
-    &::placeholder {
-      color: var(--color-text-muted);
-    }
-  }
-}
-
-.btn {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 14px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-family: inherit;
-  white-space: nowrap;
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  &__icon {
-    font-size: 16px;
-    line-height: 1;
-  }
-
-  &--add {
-    background: var(--color-primary);
-    color: #fff;
-
-    &:not(:disabled):hover {
-      background: var(--color-primary-hover);
-      transform: translateY(-1px);
-    }
-  }
-
-  &--share {
-    background: var(--color-surface);
-    color: var(--color-primary);
-    border: 1.5px solid var(--color-primary);
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    &:hover {
-      background: var(--color-primary-light);
-    }
-  }
-
-  &--clear {
-    background: transparent;
-    color: var(--color-text-muted);
-    padding: 8px 14px;
-    border-radius: 10px;
-    font-size: 13px;
-
-    &:hover {
-      background: var(--color-danger-light);
-      color: var(--color-danger);
-    }
-  }
-
-  &--cancel {
-    background: var(--color-border);
-    color: var(--color-text);
-    padding: 10px 24px;
-
-    &:hover {
-      opacity: 0.8;
-    }
-  }
-
-  &--danger {
-    background: var(--color-danger);
-    color: #fff;
-    padding: 10px 24px;
-
-    &:hover {
-      opacity: 0.9;
-    }
+  &__lang {
+    margin-bottom: 16px;
   }
 }
 
