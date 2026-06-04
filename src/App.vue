@@ -171,7 +171,7 @@ const handleClearAll = (): void => {
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .app {
   min-height: 100vh;
   min-height: 100dvh;
@@ -179,57 +179,57 @@ const handleClearAll = (): void => {
   flex-direction: column;
   align-items: center;
   padding: 40px 16px 80px;
-}
 
-.app__header {
-  text-align: center;
-  margin-bottom: 32px;
-}
+  &__header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
 
-.app__title {
-  font-size: 42px;
-  font-weight: 800;
-  color: var(--color-primary);
-  letter-spacing: -1px;
-  margin: 0;
-}
+  &__title {
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--color-primary);
+    letter-spacing: -1px;
+    margin: 0;
+  }
 
-.app__subtitle {
-  color: var(--color-text-muted);
-  font-size: 15px;
-  margin: 4px 0 0;
-}
+  &__subtitle {
+    color: var(--color-text-muted);
+    font-size: 15px;
+    margin: 4px 0 0;
+  }
 
-.app__main {
-  width: 100%;
-  max-width: 560px;
+  &__main {
+    width: 100%;
+    max-width: 560px;
+  }
 }
 
 .add-form {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
-}
 
-.add-form__input {
-  flex: 1;
-  padding: 14px 18px;
-  border: 2px solid var(--color-border);
-  border-radius: 14px;
-  font-size: 15px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  outline: none;
-  transition: border-color 0.2s ease;
-  font-family: inherit;
-}
+  &__input {
+    flex: 1;
+    padding: 14px 18px;
+    border: 2px solid var(--color-border);
+    border-radius: 14px;
+    font-size: 15px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    outline: none;
+    transition: border-color 0.2s ease;
+    font-family: inherit;
 
-.add-form__input:focus {
-  border-color: var(--color-primary);
-}
+    &:focus {
+      border-color: var(--color-primary);
+    }
 
-.add-form__input::placeholder {
-  color: var(--color-text-muted);
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+  }
 }
 
 .btn {
@@ -242,75 +242,75 @@ const handleClearAll = (): void => {
   transition: all 0.15s ease;
   font-family: inherit;
   white-space: nowrap;
-}
 
-.btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 
-.btn__icon {
-  font-size: 16px;
-  line-height: 1;
-}
+  &__icon {
+    font-size: 16px;
+    line-height: 1;
+  }
 
-.btn--add {
-  background: var(--color-primary);
-  color: #fff;
-}
+  &--add {
+    background: var(--color-primary);
+    color: #fff;
 
-.btn--add:not(:disabled):hover {
-  background: var(--color-primary-hover);
-  transform: translateY(-1px);
-}
+    &:not(:disabled):hover {
+      background: var(--color-primary-hover);
+      transform: translateY(-1px);
+    }
+  }
 
-.btn--share {
-  background: var(--color-surface);
-  color: var(--color-primary);
-  border: 1.5px solid var(--color-primary);
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+  &--share {
+    background: var(--color-surface);
+    color: var(--color-primary);
+    border: 1.5px solid var(--color-primary);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 
-.btn--share:hover {
-  background: var(--color-primary-light);
-}
+    &:hover {
+      background: var(--color-primary-light);
+    }
+  }
 
-.btn--clear {
-  background: transparent;
-  color: var(--color-text-muted);
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-}
+  &--clear {
+    background: transparent;
+    color: var(--color-text-muted);
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 13px;
 
-.btn--clear:hover {
-  background: var(--color-danger-light);
-  color: var(--color-danger);
-}
+    &:hover {
+      background: var(--color-danger-light);
+      color: var(--color-danger);
+    }
+  }
 
-.btn--cancel {
-  background: var(--color-border);
-  color: var(--color-text);
-  padding: 10px 24px;
-}
+  &--cancel {
+    background: var(--color-border);
+    color: var(--color-text);
+    padding: 10px 24px;
 
-.btn--cancel:hover {
-  opacity: 0.8;
-}
+    &:hover {
+      opacity: 0.8;
+    }
+  }
 
-.btn--danger {
-  background: var(--color-danger);
-  color: #fff;
-  padding: 10px 24px;
-}
+  &--danger {
+    background: var(--color-danger);
+    color: #fff;
+    padding: 10px 24px;
 
-.btn--danger:hover {
-  opacity: 0.9;
+    &:hover {
+      opacity: 0.9;
+    }
+  }
 }
 
 .toolbar {
@@ -320,17 +320,17 @@ const handleClearAll = (): void => {
   margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 8px;
-}
 
-.toolbar__counter {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
+  &__counter {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
 
-.toolbar__actions {
-  display: flex;
-  gap: 8px;
+  &__actions {
+    display: flex;
+    gap: 8px;
+  }
 }
 
 .toast {
@@ -356,24 +356,24 @@ const handleClearAll = (): void => {
 .empty-state {
   text-align: center;
   padding: 48px 16px;
-}
 
-.empty-state__icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
+  &__icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
 
-.empty-state__text {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--color-text);
-  margin: 0 0 4px;
-}
+  &__text {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 4px;
+  }
 
-.empty-state__hint {
-  font-size: 14px;
-  color: var(--color-text-muted);
-  margin: 0;
+  &__hint {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
 }
 
 .modal-overlay {
@@ -395,20 +395,20 @@ const handleClearAll = (): void => {
   width: 90%;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-}
 
-.modal__text {
-  font-size: 17px;
-  font-weight: 600;
-  margin: 0 0 24px;
-  color: var(--color-text);
-}
+  &__text {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 24px;
+    color: var(--color-text);
+  }
 
-.modal__actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
+  &__actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 }
 
 /* Transitions */
