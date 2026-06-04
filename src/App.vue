@@ -1,14 +1,31 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import TodoItem from "./components/TodoItem.vue";
-import { useTodos } from "./composables/useTodos";
+import { useTodos, type ShareResult } from "./composables/useTodos";
 
 defineOptions({
   name: "App",
 });
 
-const { todos, addTodo, removeTodo, toggleTodo, updateTodo, clearAll, share } =
-  useTodos();
+const {
+  todos,
+  pendingImport,
+  addTodo,
+  removeTodo,
+  toggleTodo,
+  updateTodo,
+  clearAll,
+  share,
+  applyImport,
+  dismissImport,
+} = useTodos();
+
+const SHARE_MESSAGES: Record<ShareResult, string> = {
+  shared: "Поділилися!",
+  copied: "Посилання скопійовано!",
+  too_long: "Забагато завдань для посилання",
+  error: "Не вдалось поділитися",
+};
 
 const newTodoText = ref("");
 const shareMessage = ref("");
@@ -20,71 +37,70 @@ const completedCount = computed(
 
 const totalCount = computed(() => todos.value.length);
 
-function handleAdd(): void {
+const handleAdd = (): void => {
   addTodo(newTodoText.value);
   newTodoText.value = "";
-}
+};
 
-async function handleShare(): Promise<void> {
+const handleShare = async (): Promise<void> => {
   const result = await share();
-  shareMessage.value =
-    result === "ok"
-      ? "Посилання скопійовано!"
-      : result === "too_long"
-        ? "Забагато завдань для посилання"
-        : "Не вдалось скопіювати";
+  shareMessage.value = SHARE_MESSAGES[result];
   setTimeout(() => (shareMessage.value = ""), 2500);
-}
+};
 
-function confirmClear(): void {
+const confirmClear = (): void => {
   showConfirmClear.value = true;
-}
+};
 
-function handleClearAll(): void {
+const handleClearAll = (): void => {
   clearAll();
   showConfirmClear.value = false;
-}
+};
 </script>
 
 <template>
-  <div class="app-container">
-    <header class="app-header">
-      <h1 class="app-title">Todo</h1>
-      <p class="app-subtitle">Організуй свій день</p>
+  <div class="app">
+    <header class="app__header">
+      <h1 class="app__title">Todo</h1>
+      <p class="app__subtitle">Організуй свій день</p>
     </header>
 
-    <main class="app-main">
+    <main class="app__main">
       <form class="add-form" @submit.prevent="handleAdd">
         <input
           v-model="newTodoText"
-          class="add-input"
+          class="add-form__input"
           type="text"
           placeholder="Що потрібно зробити?"
           autofocus
         />
-        <button class="btn btn-add" type="submit" :disabled="!newTodoText.trim()">
+        <button
+          class="btn btn--add"
+          type="submit"
+          :disabled="!newTodoText.trim()"
+        >
           Додати
         </button>
       </form>
 
       <div v-if="totalCount > 0" class="toolbar">
-        <span class="counter">
+        <span class="toolbar__counter">
           {{ completedCount }} / {{ totalCount }} виконано
         </span>
 
-        <div class="toolbar-actions">
-          <button class="btn btn-share" @click="handleShare">
-            <span class="btn-icon-text">↗</span>
+        <div class="toolbar__actions">
+          <button class="btn btn--share" @click="handleShare">
+            <span class="btn__icon">↗</span>
             Поділитись
           </button>
-          <button class="btn btn-clear" @click="confirmClear">
+          <button class="btn btn--clear" @click="confirmClear">
             Очистити все
           </button>
         </div>
       </div>
 
       <Transition name="toast">
-        <div v-if="shareMessage" class="toast">
+        <div v-if="shareMessage" class="toast" role="status" aria-live="polite">
           {{ shareMessage }}
         </div>
       </Transition>
@@ -101,21 +117,51 @@ function handleClearAll(): void {
       </TransitionGroup>
 
       <div v-if="totalCount === 0" class="empty-state">
-        <div class="empty-icon">📝</div>
-        <p class="empty-text">Список порожній</p>
-        <p class="empty-hint">Додай перше завдання вище</p>
+        <div class="empty-state__icon">📝</div>
+        <p class="empty-state__text">Список порожній</p>
+        <p class="empty-state__hint">Додай перше завдання вище</p>
       </div>
 
       <Transition name="fade">
-        <div v-if="showConfirmClear" class="modal-overlay" @click.self="showConfirmClear = false">
-          <div class="modal">
-            <p class="modal-text">Видалити всі завдання?</p>
-            <div class="modal-actions">
-              <button class="btn btn-cancel" @click="showConfirmClear = false">
+        <div
+          v-if="showConfirmClear"
+          class="modal-overlay"
+          @click.self="showConfirmClear = false"
+        >
+          <div class="modal" role="dialog" aria-modal="true">
+            <p class="modal__text">Видалити всі завдання?</p>
+            <div class="modal__actions">
+              <button class="btn btn--cancel" @click="showConfirmClear = false">
                 Скасувати
               </button>
-              <button class="btn btn-danger" @click="handleClearAll">
+              <button class="btn btn--danger" @click="handleClearAll">
                 Видалити
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+      <Transition name="fade">
+        <div
+          v-if="pendingImport"
+          class="modal-overlay"
+          @click.self="dismissImport"
+        >
+          <div class="modal" role="dialog" aria-modal="true">
+            <p class="modal__text">
+              Отримано список ({{ pendingImport.length }}). Замінити свій чи
+              додати завдання?
+            </p>
+            <div class="modal__actions">
+              <button class="btn btn--cancel" @click="dismissImport">
+                Скасувати
+              </button>
+              <button class="btn btn--add" @click="applyImport('merge')">
+                Додати
+              </button>
+              <button class="btn btn--danger" @click="applyImport('replace')">
+                Замінити
               </button>
             </div>
           </div>
@@ -126,7 +172,7 @@ function handleClearAll(): void {
 </template>
 
 <style scoped>
-.app-container {
+.app {
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
@@ -135,12 +181,12 @@ function handleClearAll(): void {
   padding: 40px 16px 80px;
 }
 
-.app-header {
+.app__header {
   text-align: center;
   margin-bottom: 32px;
 }
 
-.app-title {
+.app__title {
   font-size: 42px;
   font-weight: 800;
   color: var(--color-primary);
@@ -148,13 +194,13 @@ function handleClearAll(): void {
   margin: 0;
 }
 
-.app-subtitle {
+.app__subtitle {
   color: var(--color-text-muted);
   font-size: 15px;
   margin: 4px 0 0;
 }
 
-.app-main {
+.app__main {
   width: 100%;
   max-width: 560px;
 }
@@ -165,7 +211,7 @@ function handleClearAll(): void {
   margin-bottom: 20px;
 }
 
-.add-input {
+.add-form__input {
   flex: 1;
   padding: 14px 18px;
   border: 2px solid var(--color-border);
@@ -178,11 +224,11 @@ function handleClearAll(): void {
   font-family: inherit;
 }
 
-.add-input:focus {
+.add-form__input:focus {
   border-color: var(--color-primary);
 }
 
-.add-input::placeholder {
+.add-form__input::placeholder {
   color: var(--color-text-muted);
 }
 
@@ -203,37 +249,22 @@ function handleClearAll(): void {
   cursor: not-allowed;
 }
 
-.btn-add {
+.btn__icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.btn--add {
   background: var(--color-primary);
   color: #fff;
 }
 
-.btn-add:not(:disabled):hover {
+.btn--add:not(:disabled):hover {
   background: var(--color-primary-hover);
   transform: translateY(-1px);
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.counter {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  font-weight: 500;
-}
-
-.toolbar-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-share {
+.btn--share {
   background: var(--color-surface);
   color: var(--color-primary);
   border: 1.5px solid var(--color-primary);
@@ -245,16 +276,11 @@ function handleClearAll(): void {
   gap: 6px;
 }
 
-.btn-share:hover {
+.btn--share:hover {
   background: var(--color-primary-light);
 }
 
-.btn-icon-text {
-  font-size: 16px;
-  line-height: 1;
-}
-
-.btn-clear {
+.btn--clear {
   background: transparent;
   color: var(--color-text-muted);
   padding: 8px 14px;
@@ -262,9 +288,49 @@ function handleClearAll(): void {
   font-size: 13px;
 }
 
-.btn-clear:hover {
+.btn--clear:hover {
   background: var(--color-danger-light);
   color: var(--color-danger);
+}
+
+.btn--cancel {
+  background: var(--color-border);
+  color: var(--color-text);
+  padding: 10px 24px;
+}
+
+.btn--cancel:hover {
+  opacity: 0.8;
+}
+
+.btn--danger {
+  background: var(--color-danger);
+  color: #fff;
+  padding: 10px 24px;
+}
+
+.btn--danger:hover {
+  opacity: 0.9;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toolbar__counter {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.toolbar__actions {
+  display: flex;
+  gap: 8px;
 }
 
 .toast {
@@ -292,19 +358,19 @@ function handleClearAll(): void {
   padding: 48px 16px;
 }
 
-.empty-icon {
+.empty-state__icon {
   font-size: 48px;
   margin-bottom: 12px;
 }
 
-.empty-text {
+.empty-state__text {
   font-size: 18px;
   font-weight: 600;
   color: var(--color-text);
   margin: 0 0 4px;
 }
 
-.empty-hint {
+.empty-state__hint {
   font-size: 14px;
   color: var(--color-text-muted);
   margin: 0;
@@ -331,37 +397,18 @@ function handleClearAll(): void {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
-.modal-text {
+.modal__text {
   font-size: 17px;
   font-weight: 600;
   margin: 0 0 24px;
   color: var(--color-text);
 }
 
-.modal-actions {
+.modal__actions {
   display: flex;
   gap: 10px;
   justify-content: center;
-}
-
-.btn-cancel {
-  background: var(--color-border);
-  color: var(--color-text);
-  padding: 10px 24px;
-}
-
-.btn-cancel:hover {
-  opacity: 0.8;
-}
-
-.btn-danger {
-  background: var(--color-danger);
-  color: #fff;
-  padding: 10px 24px;
-}
-
-.btn-danger:hover {
-  opacity: 0.9;
+  flex-wrap: wrap;
 }
 
 /* Transitions */

@@ -22,49 +22,49 @@ const isEditing = ref(false);
 const editText = ref("");
 const editInput = ref<HTMLInputElement | null>(null);
 
-function startEdit(): void {
+const startEdit = (): void => {
   editText.value = todo.text;
   isEditing.value = true;
   nextTick(() => editInput.value?.focus());
-}
+};
 
-function saveEdit(): void {
+const saveEdit = (): void => {
   const trimmed = editText.value.trim();
   if (trimmed && trimmed !== todo.text) {
     emit("update", todo.id, trimmed);
   }
   isEditing.value = false;
-}
+};
 
-function cancelEdit(): void {
+const cancelEdit = (): void => {
   isEditing.value = false;
-}
+};
 </script>
 
 <template>
-  <li class="todo-item" :class="{ completed: todo.completed }">
-    <div v-if="!isEditing" class="todo-view">
-      <label class="todo-checkbox">
+  <li class="todo-item" :class="{ 'todo-item--completed': todo.completed }">
+    <div v-if="!isEditing" class="todo-item__view">
+      <label class="todo-item__checkbox">
         <input
           type="checkbox"
           :checked="todo.completed"
           @change="emit('toggle', todo.id)"
         />
-        <span class="checkmark" />
+        <span class="todo-item__checkmark" />
       </label>
 
-      <span class="todo-text" @dblclick="startEdit">{{ todo.text }}</span>
+      <span class="todo-item__text" @dblclick="startEdit">{{ todo.text }}</span>
 
-      <div class="todo-actions">
+      <div class="todo-item__actions">
         <button
-          class="btn-icon btn-edit"
+          class="todo-item__btn todo-item__btn--edit"
           title="Редагувати"
           @click="startEdit"
         >
           ✎
         </button>
         <button
-          class="btn-icon btn-delete"
+          class="todo-item__btn todo-item__btn--delete"
           title="Видалити"
           @click="emit('remove', todo.id)"
         >
@@ -73,11 +73,11 @@ function cancelEdit(): void {
       </div>
     </div>
 
-    <div v-else class="todo-edit">
+    <div v-else class="todo-item__edit">
       <input
         ref="editInput"
         v-model="editText"
-        class="edit-input"
+        class="todo-item__edit-input"
         @keyup.enter="saveEdit"
         @keyup.escape="cancelEdit"
         @blur="saveEdit"
@@ -101,12 +101,12 @@ function cancelEdit(): void {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-.todo-item.completed .todo-text {
+.todo-item--completed .todo-item__text {
   text-decoration: line-through;
   opacity: 0.5;
 }
 
-.todo-view {
+.todo-item__view {
   display: flex;
   align-items: center;
   width: 100%;
@@ -114,7 +114,7 @@ function cancelEdit(): void {
   gap: 12px;
 }
 
-.todo-checkbox {
+.todo-item__checkbox {
   position: relative;
   display: flex;
   align-items: center;
@@ -125,14 +125,14 @@ function cancelEdit(): void {
   cursor: pointer;
 }
 
-.todo-checkbox input {
+.todo-item__checkbox input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.checkmark {
+.todo-item__checkmark {
   width: 22px;
   height: 22px;
   border-radius: 6px;
@@ -143,7 +143,7 @@ function cancelEdit(): void {
   justify-content: center;
 }
 
-.checkmark::after {
+.todo-item__checkmark::after {
   content: "";
   display: none;
   width: 5px;
@@ -154,16 +154,16 @@ function cancelEdit(): void {
   margin-bottom: 2px;
 }
 
-.todo-checkbox input:checked + .checkmark {
+.todo-item__checkbox input:checked + .todo-item__checkmark {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.todo-checkbox input:checked + .checkmark::after {
+.todo-item__checkbox input:checked + .todo-item__checkmark::after {
   display: block;
 }
 
-.todo-text {
+.todo-item__text {
   flex: 1;
   font-size: 15px;
   line-height: 1.4;
@@ -172,18 +172,18 @@ function cancelEdit(): void {
   word-break: break-word;
 }
 
-.todo-actions {
+.todo-item__actions {
   display: flex;
   gap: 4px;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
-.todo-item:hover .todo-actions {
+.todo-item:hover .todo-item__actions {
   opacity: 1;
 }
 
-.btn-icon {
+.todo-item__btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,22 +198,22 @@ function cancelEdit(): void {
   color: var(--color-text-muted);
 }
 
-.btn-edit:hover {
+.todo-item__btn--edit:hover {
   background: var(--color-primary-light);
   color: var(--color-primary);
 }
 
-.btn-delete:hover {
+.todo-item__btn--delete:hover {
   background: var(--color-danger-light);
   color: var(--color-danger);
 }
 
-.todo-edit {
+.todo-item__edit {
   width: 100%;
   padding: 6px 8px;
 }
 
-.edit-input {
+.todo-item__edit-input {
   width: 100%;
   padding: 10px 12px;
   border: 2px solid var(--color-primary);
